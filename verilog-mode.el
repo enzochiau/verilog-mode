@@ -1515,7 +1515,8 @@ so there may be a large up front penalty for the first search."
   (let (pt)
     (while (and (not pt)
 		(re-search-forward regexp bound noerror))
-      (if (verilog-inside-comment-or-string-p)
+      ;; (if (verilog-inside-comment-or-string-p)
+      (if (verilog-in-comment-or-string-p)
           (re-search-forward "[/\"\n]" nil t)  ; Only way a comment or quote can end
 	(setq pt (match-end 0))))
     pt))
@@ -1529,7 +1530,8 @@ so there may be a large up front penalty for the first search."
   (let (pt)
     (while (and (not pt)
 		(re-search-backward regexp bound noerror))
-      (if (verilog-inside-comment-or-string-p)
+      ;; (if (verilog-inside-comment-or-string-p)
+      (if (verilog-in-comment-or-string-p)
           (re-search-backward "[/\"]" nil t)  ; Only way a comment or quote can begin
 	(setq pt (match-beginning 0))))
     pt))
@@ -3099,45 +3101,45 @@ This creates v-cmts properties where comments are in force."
 		      (backward-char 1)
 		    (goto-char end))))))))))
 
-(defun verilog-scan ()
-  "Parse the buffer, marking all comments with properties.
-Also assumes any text inserted since `verilog-scan-cache-tick'
-either is ok to parse as a non-comment, or `verilog-insert' was used."
-  ;; See also `verilog-scan-debug' and `verilog-scan-and-debug'
-  (unless (verilog-scan-cache-ok-p)
-    (save-excursion
-      (verilog-save-buffer-state
-       (when verilog-debug
-         (message "Scanning %s cache=%s cachetick=%S tick=%S" (current-buffer)
-                  verilog-scan-cache-preserving verilog-scan-cache-tick
-                  (buffer-chars-modified-tick)))
-       (remove-text-properties (point-min) (point-max) '(v-cmts nil))
-       (verilog-scan-region (point-min) (point-max))
-       (setq verilog-scan-cache-tick (buffer-chars-modified-tick))
-       (when verilog-debug (message "Scanning... done"))))))
+;; (defun verilog-scan ()
+;;   "Parse the buffer, marking all comments with properties.
+;; Also assumes any text inserted since `verilog-scan-cache-tick'
+;; either is ok to parse as a non-comment, or `verilog-insert' was used."
+;;   ;; See also `verilog-scan-debug' and `verilog-scan-and-debug'
+;;   (unless (verilog-scan-cache-ok-p)
+;;     (save-excursion
+;;       (verilog-save-buffer-state
+;;        (when verilog-debug
+;;          (message "Scanning %s cache=%s cachetick=%S tick=%S" (current-buffer)
+;;                   verilog-scan-cache-preserving verilog-scan-cache-tick
+;;                   (buffer-chars-modified-tick)))
+;;        (remove-text-properties (point-min) (point-max) '(v-cmts nil))
+;;        (verilog-scan-region (point-min) (point-max))
+;;        (setq verilog-scan-cache-tick (buffer-chars-modified-tick))
+;;        (when verilog-debug (message "Scanning... done"))))))
 
-(defun verilog-scan-debug ()
-  "For debugging, show with display face results of `verilog-scan'."
-  (font-lock-mode 0)
-  ;;(if dbg (setq dbg (concat dbg (format "verilog-scan-debug\n"))))
-  (save-excursion
-    (goto-char (point-min))
-    (remove-text-properties (point-min) (point-max) '(face nil))
-    (while (not (eobp))
-      (cond ((get-text-property (point) 'v-cmts)
-	     (put-text-property (point) (1+ (point)) `face 'underline)
-	     ;;(if dbg (setq dbg (concat dbg (format "  v-cmts at %S\n" (point)))))
-	     (forward-char 1))
-	    (t
-	     (goto-char (or (next-property-change (point)) (point-max))))))))
+;; (defun verilog-scan-debug ()
+;;   "For debugging, show with display face results of `verilog-scan'."
+;;   (font-lock-mode 0)
+;;   ;;(if dbg (setq dbg (concat dbg (format "verilog-scan-debug\n"))))
+;;   (save-excursion
+;;     (goto-char (point-min))
+;;     (remove-text-properties (point-min) (point-max) '(face nil))
+;;     (while (not (eobp))
+;;       (cond ((get-text-property (point) 'v-cmts)
+;; 	     (put-text-property (point) (1+ (point)) `face 'underline)
+;; 	     ;;(if dbg (setq dbg (concat dbg (format "  v-cmts at %S\n" (point)))))
+;; 	     (forward-char 1))
+;; 	    (t
+;; 	     (goto-char (or (next-property-change (point)) (point-max))))))))
 
-(defun verilog-scan-and-debug ()
-  "For debugging, run `verilog-scan' and `verilog-scan-debug'."
-  (let (verilog-scan-cache-preserving
-	verilog-scan-cache-tick)
-    (goto-char (point-min))
-    (verilog-scan)
-    (verilog-scan-debug)))
+;; (defun verilog-scan-and-debug ()
+;;   "For debugging, run `verilog-scan' and `verilog-scan-debug'."
+;;   (let (verilog-scan-cache-preserving
+;; 	verilog-scan-cache-tick)
+;;     (goto-char (point-min))
+;;     (verilog-scan)
+;;     (verilog-scan-debug)))
 
 ;; (defun verilog-inside-comment-or-string-p (&optional pos)
 ;;   "Check if optional point POS is inside a comment.
@@ -3150,31 +3152,41 @@ either is ok to parse as a non-comment, or `verilog-insert' was used."
 ;; 	   (get-text-property pos 'v-cmts))
 ;;     (get-text-property (point) 'v-cmts)))
 
-(defun verilog-inside-stringp (&optional pos)
-  "Returns non-nil if inside string, else nil.
-This depends on major mode having setup syntax table properly."
-  (interactive)
-  (let ((result (nth 3 (syntax-ppss pos))))
-    (when (called-interactively-p 'any)
-      (message "%s" result))
-    result))
+;; (defun verilog-inside-stringp (&optional pos)
+;;   "Returns non-nil if inside string, else nil.
+;; This depends on major mode having setup syntax table properly."
+;;   (interactive)
+;;   (let ((result (nth 3 (syntax-ppss pos))))
+;;     (when (called-interactively-p 'any)
+;;       (message "%s" result))
+;;     result))
 
-(defun verilog-inside-commentp (&optional pos)
-  "Returns non-nil if inside comment, else nil.
-This depends on major mode having setup syntax table properly."
-  (interactive)
-  (let ((result (nth 4 (syntax-ppss pos))))
-    (when (called-interactively-p 'any)
-      (message "%s" result))
-    result))
+;; (defun verilog-inside-commentp (&optional pos)
+;;   "Returns non-nil if inside comment, else nil.
+;; This depends on major mode having setup syntax table properly."
+;;   (interactive)
+;;   (let ((result (nth 4 (syntax-ppss pos))))
+;;     (when (called-interactively-p 'any)
+;;       (message "%s" result))
+;;     result))
 
-(defun verilog-inside-comment-or-string-p (&optional pos)
-  "Check if optional point POS is inside a comment.
-This may require a slow pre-parse of the buffer with `verilog-scan'
-to establish comment properties on all text."
-  (interactive)
-  (or (verilog-inside-stringp pos)
-      (verilog-inside-commentp pos)))
+;; (defun verilog-inside-comment-or-string-p (&optional pos)
+;;   "Check if optional point POS is inside a comment.
+;; This may require a slow pre-parse of the buffer with `verilog-scan'
+;; to establish comment properties on all text."
+;;   (interactive)
+;;   (or (verilog-inside-stringp pos)
+;;       (verilog-inside-commentp pos)))
+
+;; (defun verilog-insert (&rest stuff)
+;;   "Insert STUFF arguments, tracking for `verilog-inside-comment-or-string-p'.
+;; Any insert that includes a comment must have the entire comment
+;; inserted using a single call to `verilog-insert'."
+;;   (let ((pt (point)))
+;;     (while stuff
+;;       (insert (car stuff))
+;;       (setq stuff (cdr stuff)))
+;;     (verilog-scan-region pt (point))))
 
 (defun verilog-insert (&rest stuff)
   "Insert STUFF arguments, tracking for `verilog-inside-comment-or-string-p'.
@@ -3183,8 +3195,8 @@ inserted using a single call to `verilog-insert'."
   (let ((pt (point)))
     (while stuff
       (insert (car stuff))
-      (setq stuff (cdr stuff)))
-    (verilog-scan-region pt (point))))
+      (setq stuff (cdr stuff)))))
+
 
 ;; More searching
 
@@ -5178,7 +5190,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 	   (case-fold-search nil)
 	   (par 0)
 	   (begin (looking-at "[ \t]*begin\\>"))
-	   (lim (save-excursion (verilog-re-search-backward "\\(\\<begin\\>\\)\\|\\(\\<module\\>\\)" nil t)))
+	   (lim (save-excursion (verilog-re-search-backward "\\(\\<begin\\>\\)\\|\\(\\<module\\>\\)\\|\\(\\<interface\\>\\)" nil t)))
            (structres nil)
 	   (type (catch 'nesting
 		   ;; Keep working backwards until we can figure out
@@ -5801,8 +5813,10 @@ Set point to where line starts."
                ((eq (preceding-char) ?\n)  ; \n's terminate // so aren't space syntax
                 (forward-char -1)
                 t)
-               ((or (verilog-inside-comment-or-string-p (1- (point)))
-                    (verilog-inside-comment-or-string-p (point)))
+               ;; ((or (verilog-inside-comment-or-string-p (1- (point)))
+               ;;      (verilog-inside-comment-or-string-p (point)))
+               ((or (verilog-in-comment-or-string-p (1- (point)))
+                    (verilog-in-comment-or-string-p (point)))
                 (re-search-backward "[/\"]" nil t)  ; Only way a comment or quote can begin
                 t))))
 
@@ -5878,28 +5892,28 @@ Optional BOUND limits search."
 	      (if jump
 		  (beginning-of-line 2))))))))
 
-(defun verilog-in-comment-p ()
+(defun verilog-in-comment-p (&optional pos)
   "Return true if in a star or // comment."
-  (let ((state (save-excursion (verilog-syntax-ppss))))
+  (let ((state (save-excursion (verilog-syntax-ppss pos))))
     (or (nth 4 state) (nth 7 state))))
 
-(defun verilog-in-star-comment-p ()
+(defun verilog-in-star-comment-p (&optional pos)
   "Return true if in a star comment."
-  (let ((state (save-excursion (verilog-syntax-ppss))))
+  (let ((state (save-excursion (verilog-syntax-ppss pos))))
     (and
      (nth 4 state)			; t if in a comment of style a // or b /**/
      (not
       (nth 7 state)			; t if in a comment of style b /**/
       ))))
 
-(defun verilog-in-slash-comment-p ()
+(defun verilog-in-slash-comment-p (&optional pos)
   "Return true if in a slash comment."
-  (let ((state (save-excursion (verilog-syntax-ppss))))
+  (let ((state (save-excursion (verilog-syntax-ppss pos))))
     (nth 7 state)))
 
-(defun verilog-in-comment-or-string-p ()
+(defun verilog-in-comment-or-string-p (&optional pos)
   "Return true if in a string or comment."
-  (let ((state (save-excursion (verilog-syntax-ppss))))
+  (let ((state (save-excursion (verilog-syntax-ppss pos))))
     (or (nth 3 state) (nth 4 state) (nth 7 state)))) ; Inside string or comment)
 
 (defun verilog-in-attribute-p ()
@@ -8601,7 +8615,8 @@ Outputs comments above subcell signals, for example:
       (while (verilog-re-search-forward-quick "\\(/\\*AUTOINST\\*/\\|\\.\\*\\)" end-mod-point t)
 	(save-excursion
 	  (goto-char (match-beginning 0))
-	  (unless (verilog-inside-comment-or-string-p)
+	  ;; (unless (verilog-inside-comment-or-string-p)
+          (unless (verilog-in-comment-or-string-p)
 	    ;; Attempt to snarf a comment
 	    (let* ((submod (verilog-read-inst-module))
 		   (inst (verilog-read-inst-name))
@@ -8664,7 +8679,8 @@ For example if declare A A (.B(SIG)) then B will be included in the list."
       (verilog-backward-open-paren)
       (while (re-search-forward "\\.\\([^(,) \t\n\f]*\\)\\s-*" end-mod-point t)
 	(setq pin (match-string 1))
-	(unless (verilog-inside-comment-or-string-p)
+	;; (unless (verilog-inside-comment-or-string-p)
+        (unless (verilog-in-comment-or-string-p)
 	  (setq pins (cons (list pin) pins))
 	  (when (looking-at "(")
 	    (verilog-forward-sexp-ign-cmt 1))))
@@ -8678,7 +8694,8 @@ For example if declare A A (.B(SIG)) then B will be included in the list."
       (verilog-backward-open-paren)
       (while (re-search-forward "\\([a-zA-Z0-9$_.%`]+\\)" end-mod-point t)
 	(setq pin (match-string 1))
-	(unless (verilog-inside-comment-or-string-p)
+	;; (unless (verilog-inside-comment-or-string-p)
+        (unless (verilog-in-comment-or-string-p)
 	  (setq pins (cons (list pin) pins))))
       (vector pins))))
 
@@ -9108,7 +9125,8 @@ warning message, you need to add to your init file:
 	(while (re-search-forward "^\\s-*`include\\s-+\\([^ \t\n\f]+\\)" nil t)
 	  (let ((inc (verilog-string-replace-matches
 		      "\"" "" nil nil (match-string-no-properties 1))))
-	    (unless (verilog-inside-comment-or-string-p)
+	    ;; (unless (verilog-inside-comment-or-string-p)
+            (unless (verilog-in-comment-or-string-p)
 	      (verilog-read-defines inc recurse t)))))
       ;; Read `defines
       ;; note we don't use verilog-re... it's faster this way, and that
@@ -9117,7 +9135,8 @@ warning message, you need to add to your init file:
       (while (re-search-forward "^\\s-*`define\\s-+\\([a-zA-Z0-9_$]+\\)\\s-+\\(.*\\)$" nil t)
 	(let ((defname (match-string-no-properties 1))
 	      (defvalue (match-string-no-properties 2)))
-	  (unless (verilog-inside-comment-or-string-p (match-beginning 0))
+	  ;; (unless (verilog-inside-comment-or-string-p (match-beginning 0))
+          (unless (verilog-in-comment-or-string-p (match-beginning 0))
 	    (setq defvalue (verilog-string-replace-matches "\\s-*/[/*].*$" "" nil nil defvalue))
 	    (verilog-set-define defname defvalue origbuf))))
       ;; Hack: Read parameters
@@ -9132,7 +9151,8 @@ warning message, you need to add to your init file:
 	  (forward-comment 99999)
 	  (while (looking-at (concat "\\s-*,?\\s-*\\(?:/[/*].*?$\\)?\\s-*\\([a-zA-Z0-9_$]+\\)"
 				     "\\s-*=\\s-*\\([^;,]*\\),?\\s-*\\(/[/*].*?$\\)?\\s-*"))
-	    (unless (verilog-inside-comment-or-string-p (match-beginning 0))
+	    ;; (unless (verilog-inside-comment-or-string-p (match-beginning 0))
+            (unless (verilog-in-comment-or-string-p (match-beginning 0))
 	      (verilog-set-define (match-string-no-properties 1)
 				  (match-string-no-properties 2) origbuf enumname))
 	    (goto-char (match-end 0))
@@ -13915,7 +13935,8 @@ Clicking on the middle-mouse button loads them in a buffer (as in dired)."
 		  (while (verilog-re-search-forward-quick "\\(/\\*AUTOINST\\*/\\|\\.\\*\\)" end-point t)
 		    (save-excursion
 		      (goto-char (match-beginning 0))
-		      (unless (verilog-inside-comment-or-string-p)
+		      ;; (unless (verilog-inside-comment-or-string-p)
+                      (unless (verilog-in-comment-or-string-p)
                         (verilog-read-inst-module-matcher)  ; sets match 0
 			(let* ((ov (make-overlay (match-beginning 0) (match-end 0))))
 			  (overlay-put ov 'start-closed 't)
